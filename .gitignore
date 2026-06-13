@@ -1,0 +1,25 @@
+# Environment variables
+.env
+.env.*
+
+# GoLand / IntelliJ
+.idea/
+
+# Build output
+bin/
+dist/
+
+# Executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.test
+*.out
+
+# OS files
+.DS_Store
+Thumbs.db
