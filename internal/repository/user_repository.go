@@ -49,7 +49,12 @@ func (r *UserRepository) UpdateUser(
 func (r *UserRepository) DeleteUser(
 	ctx context.Context,
 	id int32,
-) error {
-
+) (int32, error) {
 	return r.queries.DeleteUser(ctx, id)
+}
+func (r *UserRepository) UserExists(
+	ctx context.Context,
+	id int32,
+) (bool, error) {
+	return r.queries.UserExists(ctx, id)
 }

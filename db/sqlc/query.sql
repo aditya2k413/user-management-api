@@ -18,6 +18,14 @@ SET name = $2,
 WHERE id = $1
     RETURNING *;
 
--- name: DeleteUser :exec
+-- name: DeleteUser :one
 DELETE FROM users
-WHERE id = $1;
+WHERE id = $1
+    RETURNING id;
+
+-- name: UserExists :one
+SELECT EXISTS(
+    SELECT 1
+    FROM users
+    WHERE id = $1
+);

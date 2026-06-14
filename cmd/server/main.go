@@ -3,13 +3,13 @@ package main
 import (
 	"UserAgeAPI/config"
 	db "UserAgeAPI/db/sqlc/generated"
-	"UserAgeAPI/internal/models"
+	"UserAgeAPI/internal/handler"
 	"UserAgeAPI/internal/repository"
+	"UserAgeAPI/internal/routes"
 	"UserAgeAPI/internal/service"
-	"context"
-	"fmt"
 	"log"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -29,34 +29,13 @@ func main() {
 
 	repo := repository.NewUserRepository(queries)
 	userService := service.NewUserService(repo)
+	userHandler := handler.NewUserHandler(userService)
 
-	user, err := userService.CreateUser(
-		context.Background(),
-		models.CreateUserRequest{
-			Name: "Aditya",
-			Dob:  "2003-01-13",
-		},
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
+	app := fiber.New()
 
-	fmt.Printf("Created User: %+v\n", user)
+	routes.SetupRoutes(app, userHandler)
 
-	fetchedUser, err := userService.GetUser(
-		context.Background(),
-		user.ID,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Println("Server running on :3000")
 
-	fmt.Printf("Fetched User: %+v\n", fetchedUser)
-
-	users, err := userService.ListUsers(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("All Users: %+v\n", users)
+	log.Fatal(app.Listen(":3000"))
 }

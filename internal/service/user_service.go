@@ -2,11 +2,14 @@ package service
 
 import (
 	db "UserAgeAPI/db/sqlc/generated"
+	customErrors "UserAgeAPI/internal/errors"
 	"UserAgeAPI/internal/models"
 	"UserAgeAPI/internal/repository"
 	"context"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -27,6 +30,9 @@ func (s *UserService) GetUser(
 
 	user, err := s.repo.GetUser(ctx, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.UserResponse{}, customErrors.ErrUserNotFound
+		}
 		return models.UserResponse{}, err
 	}
 
@@ -60,7 +66,7 @@ func (s *UserService) CreateUser(
 
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
-		return models.UserResponse{}, err
+		return models.UserResponse{}, customErrors.ErrInvalidDate
 	}
 
 	user, err := s.repo.CreateUser(ctx, db.CreateUserParams{
@@ -115,7 +121,7 @@ func (s *UserService) UpdateUser(
 
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
-		return models.UserResponse{}, err
+		return models.UserResponse{}, customErrors.ErrInvalidDate
 	}
 
 	user, err := s.repo.UpdateUser(ctx, db.UpdateUserParams{
@@ -128,6 +134,10 @@ func (s *UserService) UpdateUser(
 	})
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.UserResponse{}, customErrors.ErrUserNotFound
+		}
+
 		return models.UserResponse{}, err
 	}
 
@@ -146,5 +156,15 @@ func (s *UserService) DeleteUser(
 	id int32,
 ) error {
 
-	return s.repo.DeleteUser(ctx, id)
+	_, err := s.repo.DeleteUser(ctx, id)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return customErrors.ErrUserNotFound
+		}
+
+		return err
+	}
+
+	return nil
 }
