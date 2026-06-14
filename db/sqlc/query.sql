@@ -8,7 +8,7 @@ SELECT * FROM users
 WHERE id = $1;
 
 -- name: ListUsers :many
-SELECT * FROM users
+SELECT * FROM users 
 ORDER BY id;
 
 -- name: UpdateUser :one

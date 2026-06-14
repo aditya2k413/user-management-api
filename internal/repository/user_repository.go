@@ -27,7 +27,7 @@ func (r *UserRepository) GetUser(
 	ctx context.Context,
 	id int32,
 ) (db.User, error) {
-	return r.GetUser(ctx, id)
+	return r.queries.GetUser(ctx, id)
 
 }
 
