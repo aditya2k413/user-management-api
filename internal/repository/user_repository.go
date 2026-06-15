@@ -30,14 +30,6 @@ func (r *UserRepository) GetUser(
 	return r.queries.GetUser(ctx, id)
 
 }
-
-func (r *UserRepository) ListUsers(
-	ctx context.Context,
-) ([]db.User, error) {
-
-	return r.queries.ListUsers(ctx)
-}
-
 func (r *UserRepository) UpdateUser(
 	ctx context.Context,
 	params db.UpdateUserParams,
@@ -57,4 +49,18 @@ func (r *UserRepository) UserExists(
 	id int32,
 ) (bool, error) {
 	return r.queries.UserExists(ctx, id)
+}
+func (r *UserRepository) ListUsersPaginated(
+	ctx context.Context,
+	limit int32,
+	offset int32,
+) ([]db.User, error) {
+
+	return r.queries.ListUsersPaginated(
+		ctx,
+		db.ListUsersPaginatedParams{
+			Limit:  limit,
+			Offset: offset,
+		},
+	)
 }

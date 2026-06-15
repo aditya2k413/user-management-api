@@ -69,7 +69,14 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
-	users, err := h.service.ListUsers(c.UserContext())
+	page := int32(c.QueryInt("page", 1))
+	limit := int32(c.QueryInt("limit", 10))
+
+	users, err := h.service.ListUsers(
+		c.UserContext(),
+		page,
+		limit,
+	)
 	if err != nil {
 		return handleError(c, err)
 	}

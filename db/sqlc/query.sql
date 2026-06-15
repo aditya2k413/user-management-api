@@ -29,3 +29,10 @@ SELECT EXISTS(
     FROM users
     WHERE id = $1
 );
+
+-- name: ListUsersPaginated :many
+SELECT *
+FROM users
+ORDER BY id
+    LIMIT $1
+OFFSET $2;

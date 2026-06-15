@@ -81,27 +81,6 @@ func (s *UserService) CreateUser(
 	return mapToUserResponse(user), nil
 }
 
-func (s *UserService) ListUsers(
-	ctx context.Context,
-) ([]models.UserResponse, error) {
-
-	users, err := s.repo.ListUsers(ctx)
-	if err != nil {
-		s.logger.Error(
-			"failed to list users",
-			zap.Error(err),
-		)
-		return nil, err
-	}
-
-	var response []models.UserResponse
-
-	for _, user := range users {
-		response = append(response, mapToUserResponse(user))
-	}
-
-	return response, nil
-}
 func (s *UserService) UpdateUser(
 	ctx context.Context,
 	id int32,
@@ -165,6 +144,47 @@ func (s *UserService) DeleteUser(
 	)
 
 	return nil
+}
+func (s *UserService) ListUsers(
+	ctx context.Context,
+	page int32,
+	limit int32,
+) ([]models.UserResponse, error) {
+
+	if page < 1 {
+		page = 1
+	}
+
+	if limit < 1 {
+		limit = 10
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	offset := (page - 1) * limit
+
+	users, err := s.repo.ListUsersPaginated(
+		ctx,
+		limit,
+		offset,
+	)
+	if err != nil {
+		s.logger.Error(
+			"failed to list users",
+			zap.Error(err),
+		)
+		return nil, err
+	}
+
+	var response []models.UserResponse
+
+	for _, user := range users {
+		response = append(response, mapToUserResponse(user))
+	}
+
+	return response, nil
 }
 func mapToUserResponse(user db.User) models.UserResponse {
 	return models.UserResponse{
