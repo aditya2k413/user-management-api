@@ -16,3 +16,8 @@ type UserResponse struct {
 	Dob  string `json:"dob"`
 	Age  int    `json:"age,omitempty"`
 }
+type UserWriteResponse struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+	Dob  string `json:"dob"`
+}

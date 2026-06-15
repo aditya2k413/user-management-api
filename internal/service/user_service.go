@@ -49,11 +49,11 @@ func (s *UserService) GetUser(
 func (s *UserService) CreateUser(
 	ctx context.Context,
 	req models.CreateUserRequest,
-) (models.UserResponse, error) {
+) (models.UserWriteResponse, error) {
 
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
-		return models.UserResponse{}, customErrors.ErrInvalidDate
+		return models.UserWriteResponse{}, customErrors.ErrInvalidDate
 	}
 
 	user, err := s.repo.CreateUser(ctx, db.CreateUserParams{
@@ -69,7 +69,7 @@ func (s *UserService) CreateUser(
 			"failed to create user",
 			zap.Error(err),
 		)
-		return models.UserResponse{}, err
+		return models.UserWriteResponse{}, err
 	}
 
 	s.logger.Info(
@@ -78,18 +78,18 @@ func (s *UserService) CreateUser(
 		zap.String("name", user.Name),
 	)
 
-	return mapToUserResponse(user), nil
+	return mapToUserWriteResponse(user), nil
 }
 
 func (s *UserService) UpdateUser(
 	ctx context.Context,
 	id int32,
 	req models.UpdateUserRequest,
-) (models.UserResponse, error) {
+) (models.UserWriteResponse, error) {
 
 	dob, err := time.Parse("2006-01-02", req.Dob)
 	if err != nil {
-		return models.UserResponse{}, customErrors.ErrInvalidDate
+		return models.UserWriteResponse{}, customErrors.ErrInvalidDate
 	}
 
 	user, err := s.repo.UpdateUser(ctx, db.UpdateUserParams{
@@ -103,13 +103,13 @@ func (s *UserService) UpdateUser(
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.UserResponse{}, customErrors.ErrUserNotFound
+			return models.UserWriteResponse{}, customErrors.ErrUserNotFound
 		}
 		s.logger.Error(
 			"failed to update user",
 			zap.Error(err),
 		)
-		return models.UserResponse{}, err
+		return models.UserWriteResponse{}, err
 	}
 
 	s.logger.Info(
@@ -117,7 +117,7 @@ func (s *UserService) UpdateUser(
 		zap.Int32("id", user.ID),
 		zap.String("name", user.Name),
 	)
-	return mapToUserResponse(user), nil
+	return mapToUserWriteResponse(user), nil
 }
 
 func (s *UserService) DeleteUser(
@@ -192,6 +192,13 @@ func mapToUserResponse(user db.User) models.UserResponse {
 		Name: user.Name,
 		Dob:  user.Dob.Time.Format("2006-01-02"),
 		Age:  CalculateAge(user.Dob.Time, time.Now()),
+	}
+}
+func mapToUserWriteResponse(user db.User) models.UserWriteResponse {
+	return models.UserWriteResponse{
+		ID:   user.ID,
+		Name: user.Name,
+		Dob:  user.Dob.Time.Format("2006-01-02"),
 	}
 }
 func CalculateAge(dob time.Time, today time.Time) int {
