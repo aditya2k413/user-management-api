@@ -171,12 +171,10 @@ func mapToUserResponse(user db.User) models.UserResponse {
 		ID:   user.ID,
 		Name: user.Name,
 		Dob:  user.Dob.Time.Format("2006-01-02"),
-		Age:  CalculateAge(user.Dob.Time),
+		Age:  CalculateAge(user.Dob.Time, time.Now()),
 	}
 }
-func CalculateAge(dob time.Time) int {
-	today := time.Now()
-
+func CalculateAge(dob time.Time, today time.Time) int {
 	age := today.Year() - dob.Year()
 
 	if today.Month() < dob.Month() ||
