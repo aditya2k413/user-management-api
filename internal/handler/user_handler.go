@@ -7,16 +7,20 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
 type UserHandler struct {
-	service *service.UserService
+	service   *service.UserService
+	validator *validator.Validate
 }
 
 func NewUserHandler(service *service.UserService) *UserHandler {
+	validate := validator.New()
 	return &UserHandler{
-		service: service,
+		service:   service,
+		validator: validate,
 	}
 }
 
@@ -26,6 +30,11 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
+		})
+	}
+	if err := h.validator.Struct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "validation failed: invalid input format",
 		})
 	}
 
@@ -88,6 +97,12 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 				"error": "invalid request body",
 			},
 		)
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "validation failed: invalid input format",
+		})
 	}
 
 	user, err := h.service.UpdateUser(
