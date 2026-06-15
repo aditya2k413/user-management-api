@@ -11,15 +11,18 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.uber.org/zap"
 )
 
 type UserService struct {
-	repo *repository.UserRepository
+	repo   *repository.UserRepository
+	logger *zap.Logger
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
+func NewUserService(repo *repository.UserRepository, logger *zap.Logger) *UserService {
 	return &UserService{
-		repo: repo,
+		repo:   repo,
+		logger: logger,
 	}
 }
 
@@ -33,30 +36,14 @@ func (s *UserService) GetUser(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.UserResponse{}, customErrors.ErrUserNotFound
 		}
+		s.logger.Error(
+			"failed to get user",
+			zap.Error(err),
+		)
 		return models.UserResponse{}, err
 	}
 
-	response := models.UserResponse{
-		ID:   user.ID,
-		Name: user.Name,
-		Dob:  user.Dob.Time.Format("2006-01-02"),
-		Age:  CalculateAge(user.Dob.Time),
-	}
-
-	return response, nil
-}
-
-func CalculateAge(dob time.Time) int {
-	today := time.Now()
-
-	age := today.Year() - dob.Year()
-
-	if today.Month() < dob.Month() ||
-		(today.Month() == dob.Month() && today.Day() < dob.Day()) {
-		age--
-	}
-
-	return age
+	return mapToUserResponse(user), nil
 }
 
 func (s *UserService) CreateUser(
@@ -78,17 +65,20 @@ func (s *UserService) CreateUser(
 	})
 
 	if err != nil {
+		s.logger.Error(
+			"failed to create user",
+			zap.Error(err),
+		)
 		return models.UserResponse{}, err
 	}
 
-	response := models.UserResponse{
-		ID:   user.ID,
-		Name: user.Name,
-		Dob:  user.Dob.Time.Format("2006-01-02"),
-		Age:  CalculateAge(user.Dob.Time),
-	}
+	s.logger.Info(
+		"user created",
+		zap.Int32("id", user.ID),
+		zap.String("name", user.Name),
+	)
 
-	return response, nil
+	return mapToUserResponse(user), nil
 }
 
 func (s *UserService) ListUsers(
@@ -97,18 +87,17 @@ func (s *UserService) ListUsers(
 
 	users, err := s.repo.ListUsers(ctx)
 	if err != nil {
+		s.logger.Error(
+			"failed to list users",
+			zap.Error(err),
+		)
 		return nil, err
 	}
 
 	var response []models.UserResponse
 
 	for _, user := range users {
-		response = append(response, models.UserResponse{
-			ID:   user.ID,
-			Name: user.Name,
-			Dob:  user.Dob.Time.Format("2006-01-02"),
-			Age:  CalculateAge(user.Dob.Time),
-		})
+		response = append(response, mapToUserResponse(user))
 	}
 
 	return response, nil
@@ -137,18 +126,19 @@ func (s *UserService) UpdateUser(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.UserResponse{}, customErrors.ErrUserNotFound
 		}
-
+		s.logger.Error(
+			"failed to update user",
+			zap.Error(err),
+		)
 		return models.UserResponse{}, err
 	}
 
-	response := models.UserResponse{
-		ID:   user.ID,
-		Name: user.Name,
-		Dob:  user.Dob.Time.Format("2006-01-02"),
-		Age:  CalculateAge(user.Dob.Time),
-	}
-
-	return response, nil
+	s.logger.Info(
+		"user updated",
+		zap.Int32("id", user.ID),
+		zap.String("name", user.Name),
+	)
+	return mapToUserResponse(user), nil
 }
 
 func (s *UserService) DeleteUser(
@@ -163,8 +153,36 @@ func (s *UserService) DeleteUser(
 			return customErrors.ErrUserNotFound
 		}
 
+		s.logger.Error(
+			"failed to delete user",
+			zap.Error(err),
+		)
 		return err
 	}
+	s.logger.Info(
+		"user deleted",
+		zap.Int32("id", id),
+	)
 
 	return nil
+}
+func mapToUserResponse(user db.User) models.UserResponse {
+	return models.UserResponse{
+		ID:   user.ID,
+		Name: user.Name,
+		Dob:  user.Dob.Time.Format("2006-01-02"),
+		Age:  CalculateAge(user.Dob.Time),
+	}
+}
+func CalculateAge(dob time.Time) int {
+	today := time.Now()
+
+	age := today.Year() - dob.Year()
+
+	if today.Month() < dob.Month() ||
+		(today.Month() == dob.Month() && today.Day() < dob.Day()) {
+		age--
+	}
+
+	return age
 }

@@ -4,38 +4,53 @@ import (
 	"UserAgeAPI/config"
 	db "UserAgeAPI/db/sqlc/generated"
 	"UserAgeAPI/internal/handler"
+	"UserAgeAPI/internal/logger"
 	"UserAgeAPI/internal/repository"
 	"UserAgeAPI/internal/routes"
 	"UserAgeAPI/internal/service"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 func main() {
-	err := godotenv.Load()
+	zapLogger, err := logger.NewLogger()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+	defer zapLogger.Sync()
+	if err := godotenv.Load(); err != nil {
+		zapLogger.Fatal("failed to load env file",
+			zap.Error(err),
+		)
 	}
 
 	pool, err := config.ConnectDB()
 	if err != nil {
-		log.Fatal(err)
+		zapLogger.Fatal("failed to connect database",
+			zap.Error(err),
+		)
 	}
 	defer pool.Close()
 
 	queries := db.New(pool)
 
 	repo := repository.NewUserRepository(queries)
-	userService := service.NewUserService(repo)
+	userService := service.NewUserService(repo, zapLogger)
 	userHandler := handler.NewUserHandler(userService)
 
 	app := fiber.New()
 
 	routes.SetupRoutes(app, userHandler)
 
-	log.Println("Server running on :3000")
+	zapLogger.Info("server running",
+		zap.String("port", "3000"),
+	)
 
-	log.Fatal(app.Listen(":3000"))
+	if err := app.Listen(":3000"); err != nil {
+		zapLogger.Fatal("failed to start server",
+			zap.Error(err),
+		)
+	}
 }
