@@ -20,11 +20,7 @@ func main() {
 		panic(err)
 	}
 	defer zapLogger.Sync()
-	if err := godotenv.Load(); err != nil {
-		zapLogger.Fatal("failed to load env file",
-			zap.Error(err),
-		)
-	}
+	_ = godotenv.Load()
 
 	pool, err := config.ConnectDB()
 	if err != nil {

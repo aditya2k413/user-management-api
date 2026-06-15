@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:17
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: userdb
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d userdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/migrations
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://postgres:postgres@db:5432/userdb?sslmode=disable",
+        "up"
+      ]
+
+  app:
+    build: .
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/userdb?sslmode=disable
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
